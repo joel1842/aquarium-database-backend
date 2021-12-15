@@ -143,3 +143,42 @@ app.delete('/removefav/:id/', (req, res) => {
         }
     })
 })
+
+app.post('/createtank', (req, res) => {
+    client.query('INSERT INTO "tanks" ("user", "tankName", "tankSize", "unit") VALUES ($1, $2, $3, $4);', [req.body.user, req.body.tankName, req.body.tankSize, req.body.unit], (err, res) => {
+        if (err) {
+            console.log(err);
+        } else {
+            console.log('Tank Created!')
+            console.log(res);
+        }
+    })
+})
+
+app.post('/mytanks', (req, res) => {
+
+    const user = req.body.user
+    let tanks = []
+
+    client.query('SELECT * FROM "tanks"', (err, response) => {
+        if (err) {
+            console.log(err)
+        } else {
+
+            const data = response;
+
+            data.rows.forEach((row) => {
+                if (row.user === user) {
+                    const tank = {
+                        tankName: row.tankName,
+                        tankSize: row.tankSize,
+                        unit: row.unit
+                    }
+                    tanks.push(tank)
+                }
+            })
+
+            res.json(tanks);
+        }
+    })
+})
