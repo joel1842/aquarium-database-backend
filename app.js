@@ -44,18 +44,8 @@ app.get('/', (req, res) => {
     res.render('home.ejs')
 })
 
-app.get('/goldfish', (req, res) => {
-    client.query('SELECT pic1, name, "scientificName","sizeCM", "careLevel", "plants" FROM goldfish UNION SELECT pic1, name, "scientificName","sizeCM", "careLevel", "plants" FROM catfish UNION SELECT pic1, name, "scientificName","sizeCM", "careLevel", "plants" FROM gourami UNION SELECT pic1, name, "scientificName","sizeCM", "careLevel", "plants" FROM pufferfish UNION SELECT pic1, name, "scientificName","sizeCM", "careLevel", "plants" FROM cyprinids UNION SELECT pic1, name, "scientificName","sizeCM", "careLevel", "plants" FROM loaches UNION SELECT pic1, name, "scientificName","sizeCM", "careLevel", "plants" FROM characidae', (err, response) => {
-        if (err) {
-            console.log(err)
-        } else {
-            res.json(response.rows)
-        }
-    })
-})
-
-app.get('/tetra', (req, res) => {
-    client.query('SELECT * FROM characidae', (err, response) => {
+app.get('/allfish', (req, res) => {
+    client.query('SELECT "pic1", "pic2", "pic3", "fishID", "scientificName", "name", "origin", "careLevel", "temperament", "sizeCM", "sizeIN", "lifespan", "tankSizeL", "tankSizeG", "phLevelLow", "phLevelHigh", "dhLevelLow", "dhLevelHigh", "tempLowC", "tempHighC", "tempLowF", "tempHighF", "dietType" FROM goldfish UNION SELECT "pic1", "pic2", "pic3", "fishID", "scientificName", "name", "origin", "careLevel", "temperament", "sizeCM", "sizeIN", "lifespan", "tankSizeL", "tankSizeG", "phLevelLow", "phLevelHigh", "dhLevelLow", "dhLevelHigh", "tempLowC", "tempHighC", "tempLowF", "tempHighF", "dietType" FROM catfish UNION SELECT "pic1", "pic2", "pic3", "fishID", "scientificName", "name", "origin", "careLevel", "temperament", "sizeCM", "sizeIN", "lifespan", "tankSizeL", "tankSizeG", "phLevelLow", "phLevelHigh", "dhLevelLow", "dhLevelHigh", "tempLowC", "tempHighC", "tempLowF", "tempHighF", "dietType" FROM gourami UNION SELECT "pic1", "pic2", "pic3", "fishID", "scientificName", "name", "origin", "careLevel", "temperament", "sizeCM", "sizeIN", "lifespan", "tankSizeL", "tankSizeG", "phLevelLow", "phLevelHigh", "dhLevelLow", "dhLevelHigh", "tempLowC", "tempHighC", "tempLowF", "tempHighF", "dietType" FROM pufferfish UNION SELECT "pic1", "pic2", "pic3", "fishID", "scientificName", "name", "origin", "careLevel", "temperament", "sizeCM", "sizeIN", "lifespan", "tankSizeL", "tankSizeG", "phLevelLow", "phLevelHigh", "dhLevelLow", "dhLevelHigh", "tempLowC", "tempHighC", "tempLowF", "tempHighF", "dietType" FROM cyprinids UNION SELECT "pic1", "pic2", "pic3", "fishID", "scientificName", "name", "origin", "careLevel", "temperament", "sizeCM", "sizeIN", "lifespan", "tankSizeL", "tankSizeG", "phLevelLow", "phLevelHigh", "dhLevelLow", "dhLevelHigh", "tempLowC", "tempHighC", "tempLowF", "tempHighF", "dietType" FROM loaches UNION SELECT "pic1", "pic2", "pic3", "fishID", "scientificName", "name", "origin", "careLevel", "temperament", "sizeCM", "sizeIN", "lifespan", "tankSizeL", "tankSizeG", "phLevelLow", "phLevelHigh", "dhLevelLow", "dhLevelHigh", "tempLowC", "tempHighC", "tempLowF", "tempHighF", "dietType" FROM characidae', (err, response) => {
         if (err) {
             console.log(err)
         } else {
@@ -170,6 +160,7 @@ app.post('/mytanks', (req, res) => {
             data.rows.forEach((row) => {
                 if (row.user === user) {
                     const tank = {
+                        id: row.id,
                         tankName: row.tankName,
                         tankSize: row.tankSize,
                         unit: row.unit
@@ -179,6 +170,57 @@ app.post('/mytanks', (req, res) => {
             })
 
             res.json(tanks);
+        }
+    })
+})
+
+app.post('/myfish', (req, res) => {
+    const tank = req.body.tank
+    let fishies = []
+
+    client.query('SELECT * FROM "tankFish"', (err, response) => {
+        if (err) {
+            console.log(err)
+        } else {
+
+            const data = response;
+
+            data.rows.forEach((row) => {
+                if (row.tankName === tank) {
+                    const fish = {
+                        id: row.id,
+                        pic: row.fishPic,
+                        name: row.fishName
+                    }
+                    fishies.push(fish)
+                }
+            })
+
+            res.json(fishies);
+        }
+    })
+})
+
+app.post('/addfish', (req, res) => {
+    client.query('INSERT INTO "tankFish" ("user", "tankName", "fishPic", "fishName") VALUES ($1, $2, $3, $4);', [req.body.user, req.body.tank, req.body.pic, req.body.name], (err, res) => {
+        if (err) {
+            console.log(err);
+        } else {
+            console.log('Added fish to tank!')
+            console.log(res);
+        }
+    })
+})
+
+app.delete('/deletetank/:id/', (req, res) => {
+    const id = req.params.id;
+    const queryString = 'DELETE FROM "tanks" WHERE id =';
+
+    client.query(queryString + id, (err, response) => {
+        if (err) {
+            console.log('Error:', err);
+        } else {
+            console.log('Deleted Tank!');
         }
     })
 })
