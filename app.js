@@ -54,16 +54,6 @@ app.get('/allfish', (req, res) => {
     })
 })
 
-app.get('/tetra', (req, res) => {
-    client.query('SELECT * FROM characidae', (err, response) => {
-        if (err) {
-            console.log(err)
-        } else {
-            res.json(response.rows)
-        }
-    })
-})
-
 app.post('/favorites', (req, res) => {
 
     let user = req.body.user;
@@ -184,8 +174,42 @@ app.post('/mytanks', (req, res) => {
     })
 })
 
-app.post('/addfish', (req, res) => {
+app.post('/myfish', (req, res) => {
+    const tank = req.body.tank
+    let fishies = []
 
+    client.query('SELECT * FROM "tankFish"', (err, response) => {
+        if (err) {
+            console.log(err)
+        } else {
+
+            const data = response;
+
+            data.rows.forEach((row) => {
+                if (row.tankName === tank) {
+                    const fish = {
+                        id: row.id,
+                        pic: row.fishPic,
+                        name: row.fishName
+                    }
+                    fishies.push(fish)
+                }
+            })
+
+            res.json(fishies);
+        }
+    })
+})
+
+app.post('/addfish', (req, res) => {
+    client.query('INSERT INTO "tankFish" ("user", "tankName", "fishPic", "fishName") VALUES ($1, $2, $3, $4);', [req.body.user, req.body.tank, req.body.pic, req.body.name], (err, res) => {
+        if (err) {
+            console.log(err);
+        } else {
+            console.log('Added fish to tank!')
+            console.log(res);
+        }
+    })
 })
 
 app.delete('/deletetank/:id/', (req, res) => {
