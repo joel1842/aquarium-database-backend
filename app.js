@@ -2,12 +2,21 @@ const { render } = require('ejs');
 const express = require('express');
 const cors = require('cors');
 const app = express();
+const { auth } = require('express-oauth2-jwt-bearer');
 const { Client } = require('pg');
 const e = require('express');
 require('dotenv').config()
+const audience = process.env.AUTH0_AUDIENCE;
 const connectionString = process.env.connectionString;
 
 app.listen(process.env.PORT || 3001);
+
+const checkJwt = auth({
+    audience: audience,
+    issuerBaseURL: `https://dev-3443m6xg.us.auth0.com/`,
+});
+
+// app.use(jwtCheck);
 
 const client = new Client({
     connectionString,
@@ -28,8 +37,8 @@ app.use('/img', express.static(__dirname + '/img'));
 
 app.use((req, res, next) => {
 
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.set("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.set("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, X-Custom-Header, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
   res.set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
   res.set("Access-Control-Allow-Credentials", "true")
 
@@ -54,7 +63,7 @@ app.get('/allfish', (req, res) => {
     })
 })
 
-app.post('/favorites', (req, res) => {
+app.post('/favorites', checkJwt, (req, res) => {
 
     let user = req.body.user;
     let fishName = req.body.name;
