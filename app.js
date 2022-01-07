@@ -2,6 +2,8 @@ const { render } = require('ejs');
 const express = require('express');
 const cors = require('cors');
 const app = express();
+const jwt = require('express-jwt');
+const jwks = require('jwks-rsa');
 const { auth } = require('express-oauth2-jwt-bearer');
 const { Client } = require('pg');
 const e = require('express');
@@ -11,9 +13,16 @@ const connectionString = process.env.connectionString;
 
 app.listen(process.env.PORT || 3001);
 
-const checkJwt = auth({
-    audience: audience,
-    issuerBaseURL: `https://dev-3443m6xg.us.auth0.com/`,
+const jwtCheck = jwt({
+    secret: jwks.expressJwtSecret({
+        cache: true,
+        rateLimit: true,
+        jwksRequestsPerMinute: 5,
+        jwksUri: 'https://dev-3443m6xg.us.auth0.com/.well-known/jwks.json'
+  }),
+  audience: 'https://fishy/api',
+  issuer: 'https://dev-3443m6xg.us.auth0.com/',
+  algorithms: ['RS256']
 });
 
 // app.use(jwtCheck);
@@ -38,7 +47,7 @@ app.use('/img', express.static(__dirname + '/img'));
 app.use((req, res, next) => {
 
   res.set("Access-Control-Allow-Origin", "http://localhost:3000");
-  res.set("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, X-Custom-Header, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
+  res.set("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, X-Custom-Header, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Authorization");
   res.set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
   res.set("Access-Control-Allow-Credentials", "true")
 
@@ -63,7 +72,7 @@ app.get('/allfish', (req, res) => {
     })
 })
 
-app.post('/favorites', checkJwt, (req, res) => {
+app.post('/favorites', jwtCheck, (req, res) => {
 
     let user = req.body.user;
     let fishName = req.body.name;
@@ -94,16 +103,16 @@ app.post('/favorites', checkJwt, (req, res) => {
                     console.log(err);
                 } else {
                     console.log('New Favorite!')
-                    console.log(res);
                 }
             })
         }
     })
 }) 
 
-app.post('/favlist', (req, res) => {
+app.post('/favlist', jwtCheck, (req, res) => {
 
     const user = req.body.user
+
     let favFish = []
 
     client.query('SELECT * FROM "favoritesList"', (err, response) => {
@@ -129,7 +138,7 @@ app.post('/favlist', (req, res) => {
     })
 })
 
-app.delete('/removefav/:id/', (req, res) => {
+app.delete('/removefav/:id/', jwtCheck, (req, res) => {
 
     const id = req.params.id;
     const queryString = 'DELETE FROM "favoritesList" WHERE id =';
@@ -139,11 +148,14 @@ app.delete('/removefav/:id/', (req, res) => {
             console.log('Error:', err);
         } else {
             console.log('Deleted Favorite!')
+            res.send({
+                msg: "Deleted Favorite!"
+            })
         }
     })
 })
 
-app.post('/createtank', (req, res) => {
+app.post('/createtank', jwtCheck, (req, res) => {
     client.query('INSERT INTO "tanks" ("user", "tankName", "tankSize", "unit") VALUES ($1, $2, $3, $4);', [req.body.user, req.body.tankName, req.body.tankSize, req.body.unit], (err, res) => {
         if (err) {
             console.log(err);
@@ -154,7 +166,7 @@ app.post('/createtank', (req, res) => {
     })
 })
 
-app.post('/mytanks', (req, res) => {
+app.post('/mytanks', jwtCheck, (req, res) => {
 
     const user = req.body.user
     let tanks = []
@@ -183,7 +195,7 @@ app.post('/mytanks', (req, res) => {
     })
 })
 
-app.post('/myfish', (req, res) => {
+app.post('/myfish', jwtCheck, (req, res) => {
     const tank = req.body.tank
     let fishies = []
 
@@ -210,7 +222,7 @@ app.post('/myfish', (req, res) => {
     })
 })
 
-app.post('/addfish', (req, res) => {
+app.post('/addfish', jwtCheck, (req, res) => {
     client.query('INSERT INTO "tankFish" ("user", "tankName", "fishPic", "fishName") VALUES ($1, $2, $3, $4);', [req.body.user, req.body.tank, req.body.pic, req.body.name], (err, res) => {
         if (err) {
             console.log(err);
@@ -221,7 +233,7 @@ app.post('/addfish', (req, res) => {
     })
 })
 
-app.delete('/deletetank/:id/', (req, res) => {
+app.delete('/deletetank/:id/', jwtCheck, (req, res) => {
     const id = req.params.id;
     const queryString = 'DELETE FROM "tanks" WHERE id =';
 
