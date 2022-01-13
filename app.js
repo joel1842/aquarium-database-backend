@@ -3,12 +3,14 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const jwt = require('express-jwt');
+const jwt_decode = require('jwt-decode')
 const jwks = require('jwks-rsa');
 const { auth } = require('express-oauth2-jwt-bearer');
 const { Client } = require('pg');
 const e = require('express');
 require('dotenv').config()
 const audience = process.env.AUTH0_AUDIENCE;
+const issuer = process.env.AUTH0_ISSUER
 const connectionString = process.env.connectionString;
 
 app.listen(process.env.PORT || 3001);
@@ -20,8 +22,8 @@ const jwtCheck = jwt({
         jwksRequestsPerMinute: 5,
         jwksUri: 'https://dev-3443m6xg.us.auth0.com/.well-known/jwks.json'
   }),
-  audience: 'https://fishy/api',
-  issuer: 'https://dev-3443m6xg.us.auth0.com/',
+  audience: audience,
+  issuer: issuer,
   algorithms: ['RS256']
 });
 
@@ -77,8 +79,11 @@ app.get('/allfish', (req, res) => {
 
 app.post('/favorites', jwtCheck, (req, res) => {
 
-    let user = req.body.user;
     let fishName = req.body.name;
+    let token = req.headers.authorization
+    let decoded = jwt_decode(token)
+    let sub = decoded.sub
+
     let arrayLength;
     let verified = 0;
 
@@ -92,7 +97,7 @@ app.post('/favorites', jwtCheck, (req, res) => {
             arrayLength = data.rows.length
 
             data.rows.forEach((row) => {
-                if (row.userID === user && row.fishName === fishName) {
+                if (row.subID === sub && row.fishName === fishName) {
                     console.log('duplicate!')
                 } else {
                     verified++
@@ -101,7 +106,7 @@ app.post('/favorites', jwtCheck, (req, res) => {
         }
 
         if (verified === arrayLength) {
-            client.query('INSERT INTO "favoritesList" ("userID", "pic1", "fishName") VALUES ($1, $2, $3);', [req.body.user, req.body.pic, req.body.name], (err, res) => {
+            client.query('INSERT INTO "favoritesList" ("subID", "pic", "fishName", "link") VALUES ($1, $2, $3, $4);', [sub, req.body.pic, req.body.name, req.body.link], (err, res) => {
                 if (err) {
                     console.log(err);
                 } else {
@@ -112,9 +117,11 @@ app.post('/favorites', jwtCheck, (req, res) => {
     })
 }) 
 
-app.post('/favlist', jwtCheck, (req, res) => {
+app.get('/favlist', jwtCheck, (req, res) => {
 
-    const user = req.body.user
+    let token = req.headers.authorization
+    let decoded = jwt_decode(token)
+    let sub = decoded.sub
 
     let favFish = []
 
@@ -126,11 +133,12 @@ app.post('/favlist', jwtCheck, (req, res) => {
             const data = response;
 
             data.rows.forEach((row) => {
-                if (row.userID === user) {
+                if (row.subID === sub) {
                     const fishInfo = {
                         id: row.id,
-                        pic: row.pic1,
-                        fishName: row.fishName
+                        pic: row.pic,
+                        fishName: row.fishName,
+                        link: row.link
                     }
                     favFish.push(fishInfo)
                 }
@@ -159,7 +167,12 @@ app.delete('/removefav/:id/', jwtCheck, (req, res) => {
 })
 
 app.post('/createtank', jwtCheck, (req, res) => {
-    client.query('INSERT INTO "tanks" ("user", "tankName", "tankSize", "unit") VALUES ($1, $2, $3, $4);', [req.body.user, req.body.tankName, req.body.tankSize, req.body.unit], (err, res) => {
+
+    let token = req.headers.authorization
+    let decoded = jwt_decode(token)
+    let sub = decoded.sub
+
+    client.query('INSERT INTO "tanks" ("user", "tankName", "tankSize", "unit", "tankType") VALUES ($1, $2, $3, $4, $5);', [sub, req.body.tankName, req.body.tankSize, req.body.unit, req.body.tankType], (err, res) => {
         if (err) {
             console.log(err);
         } else {
@@ -171,7 +184,9 @@ app.post('/createtank', jwtCheck, (req, res) => {
 
 app.post('/mytanks', jwtCheck, (req, res) => {
 
-    const user = req.body.user
+    let token = req.headers.authorization
+    let decoded = jwt_decode(token)
+    let sub = decoded.sub
     let tanks = []
 
     client.query('SELECT * FROM "tanks"', (err, response) => {
@@ -182,11 +197,12 @@ app.post('/mytanks', jwtCheck, (req, res) => {
             const data = response;
 
             data.rows.forEach((row) => {
-                if (row.user === user) {
+                if (row.user === sub) {
                     const tank = {
                         id: row.id,
                         tankName: row.tankName,
                         tankSize: row.tankSize,
+                        tankType: row.tankType,
                         unit: row.unit
                     }
                     tanks.push(tank)
@@ -214,7 +230,8 @@ app.post('/myfish', jwtCheck, (req, res) => {
                     const fish = {
                         id: row.id,
                         pic: row.fishPic,
-                        name: row.fishName
+                        name: row.fishName,
+                        link: row.link
                     }
                     fishies.push(fish)
                 }
@@ -226,7 +243,12 @@ app.post('/myfish', jwtCheck, (req, res) => {
 })
 
 app.post('/addfish', jwtCheck, (req, res) => {
-    client.query('INSERT INTO "tankFish" ("user", "tankName", "fishPic", "fishName") VALUES ($1, $2, $3, $4);', [req.body.user, req.body.tank, req.body.pic, req.body.name], (err, res) => {
+
+    let token = req.headers.authorization
+    let decoded = jwt_decode(token)
+    let sub = decoded.sub
+
+    client.query('INSERT INTO "tankFish" ("user", "tankName", "fishPic", "fishName", "link") VALUES ($1, $2, $3, $4, $5);', [sub, req.body.tank, req.body.pic, req.body.name , req.body.link], (err, res) => {
         if (err) {
             console.log(err);
         } else {
