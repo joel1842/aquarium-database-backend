@@ -270,3 +270,16 @@ app.delete('/deletetank/:id/', jwtCheck, (req, res) => {
         }
     })
 })
+
+app.delete('/deletetankfish/:id/', jwtCheck, (req, res) => {
+    const id = req.params.id;
+    const queryString = 'DELETE FROM "tankFish" WHERE id =';
+
+    client.query(queryString + id, (err, response) => {
+        if (err) {
+            console.log('Error:', err);
+        } else {
+            console.log('Deleted Fish!');
+        }
+    })
+})
