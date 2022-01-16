@@ -231,7 +231,8 @@ app.post('/myfish', jwtCheck, (req, res) => {
                         id: row.id,
                         pic: row.fishPic,
                         name: row.fishName,
-                        link: row.link
+                        link: row.link,
+                        quantity: row.quantity
                     }
                     fishies.push(fish)
                 }
@@ -248,7 +249,7 @@ app.post('/addfish', jwtCheck, (req, res) => {
     let decoded = jwt_decode(token)
     let sub = decoded.sub
 
-    client.query('INSERT INTO "tankFish" ("user", "tankName", "fishPic", "fishName", "link") VALUES ($1, $2, $3, $4, $5);', [sub, req.body.tank, req.body.pic, req.body.name , req.body.link], (err, res) => {
+    client.query('INSERT INTO "tankFish" ("user", "tankName", "fishPic", "fishName", "link", "quantity") VALUES ($1, $2, $3, $4, $5, $6);', [sub, req.body.tank, req.body.pic, req.body.name , req.body.link, req.body.quantity], (err, res) => {
         if (err) {
             console.log(err);
         } else {
@@ -280,6 +281,59 @@ app.delete('/deletetankfish/:id/', jwtCheck, (req, res) => {
             console.log('Error:', err);
         } else {
             console.log('Deleted Fish!');
+        }
+    })
+})
+
+app.post('/newentry', jwtCheck, (req, res) => {
+    let token = req.headers.authorization
+    let decoded = jwt_decode(token)
+    let sub = decoded.sub
+
+    let date = Date.now()
+
+    client.query('INSERT INTO "tankJournal" ("user", "date", "ammonia", "nitrites", "nitrates", "phLevel", "alkalinity", "dhLevel") VALUES ($1, $2, $3, $4, $5, $6, $7, $8);', [sub, date, req.body.ammonia, req.body.nitrite, req.body.nitrate, req.body.phLevel, req.body.alkalinity, req.body.dhLevel], (err, res) => {
+        if (err) {
+            console.log('Error:', err);
+        } else {
+            console.log('New Entry!');
+        }
+    })
+
+})
+
+app.get('/getjournal', jwtCheck, (req, res) => {
+
+    let token = req.headers.authorization
+    let decoded = jwt_decode(token)
+    let sub = decoded.sub
+
+    let journal = []
+
+    client.query('SELECT * FROM "tankJournal"', (err, response) => {
+        if (err) {
+            console.log(err)
+        } else {
+
+            const data = response;
+
+            data.rows.forEach((row) => {
+                if (row.user === sub) {
+                    const entry = {
+                        id: row.id,
+                        date: row.date,
+                        ammonia: row.ammonia,
+                        nitrites: row.nitrites,
+                        nitrates: row.nitrates,
+                        phLevel: row.phLevel,
+                        alkalinity: row.alkalinity,
+                        dhLevel: row.dhLevel
+                    }
+                    journal.push(entry)
+                }
+            })
+            const sortedJournal = journal.sort((a, b) => b.date - a.date)
+            res.json(sortedJournal);
         }
     })
 })
