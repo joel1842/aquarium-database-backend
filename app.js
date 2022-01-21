@@ -292,7 +292,7 @@ app.post('/newentry', jwtCheck, (req, res) => {
 
     let date = Date.now()
 
-    client.query('INSERT INTO "tankJournal" ("user", "date", "ammonia", "nitrites", "nitrates", "phLevel", "alkalinity", "dhLevel") VALUES ($1, $2, $3, $4, $5, $6, $7, $8);', [sub, date, req.body.ammonia, req.body.nitrite, req.body.nitrate, req.body.phLevel, req.body.alkalinity, req.body.dhLevel], (err, res) => {
+    client.query('INSERT INTO "tankJournal" ("user", "date", "ammonia", "nitrites", "nitrates", "phLevel", "alkalinity", "dhLevel", "tankName") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);', [sub, date, req.body.ammonia, req.body.nitrite, req.body.nitrate, req.body.phLevel, req.body.alkalinity, req.body.dhLevel, req.body.tankName], (err, res) => {
         if (err) {
             console.log('Error:', err);
         } else {
@@ -302,7 +302,7 @@ app.post('/newentry', jwtCheck, (req, res) => {
 
 })
 
-app.get('/getjournal', jwtCheck, (req, res) => {
+app.post('/getjournal', jwtCheck, (req, res) => {
 
     let token = req.headers.authorization
     let decoded = jwt_decode(token)
@@ -314,26 +314,29 @@ app.get('/getjournal', jwtCheck, (req, res) => {
         if (err) {
             console.log(err)
         } else {
-
             const data = response;
 
             data.rows.forEach((row) => {
                 if (row.user === sub) {
-                    const entry = {
-                        id: row.id,
-                        date: row.date,
-                        ammonia: row.ammonia,
-                        nitrites: row.nitrites,
-                        nitrates: row.nitrates,
-                        phLevel: row.phLevel,
-                        alkalinity: row.alkalinity,
-                        dhLevel: row.dhLevel
+                    if (row.tankName === req.body.tank) {
+                        const entry = {
+                            id: row.id,
+                            date: row.date,
+                            ammonia: row.ammonia,
+                            nitrites: row.nitrites,
+                            nitrates: row.nitrates,
+                            phLevel: row.phLevel,
+                            alkalinity: row.alkalinity,
+                            dhLevel: row.dhLevel
+                        }
+                        journal.push(entry)
                     }
-                    journal.push(entry)
                 }
             })
+
             const sortedJournal = journal.sort((a, b) => b.date - a.date)
             res.json(sortedJournal);
+
         }
     })
 })
