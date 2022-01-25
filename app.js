@@ -66,7 +66,7 @@ app.get('/', (req, res) => {
 
 app.get('/allfish', (req, res) => {
     
-    const query = '"pic1", "pic2", "pic3", "fishID", "scientificName", "name", "origin", "careLevel", "temperament", "sizeCM", "sizeIN", "lifespan", "tankSizeL", "tankSizeG", "phLevelLow", "phLevelHigh", "dhLevelLow", "dhLevelHigh", "tempLowC", "tempHighC", "tempLowF", "tempHighF", "dietType"'
+    const query = '"pic1", "pic2", "pic3", "fishID", "scientificName", "name", "origin", "careLevel", "temperament", "sizeCM", "sizeIN", "lifespan", "tankSizeL", "tankSizeG", "phLevelLow", "phLevelHigh", "dhLevelLow", "dhLevelHigh", "tempLowC", "tempHighC", "tempLowF", "tempHighF", "dietType", "wikipedia", "fishbase", "aquawiki"'
 
     client.query('SELECT' + query + 'FROM goldfish UNION SELECT' + query + 'FROM catfish UNION SELECT' + query + 'FROM gourami UNION SELECT' + query + 'FROM pufferfish UNION SELECT' + query + 'FROM cyprinids UNION SELECT' + query + 'FROM loaches UNION SELECT' + query + 'FROM characidae', (err, response) => {
         if (err) {
