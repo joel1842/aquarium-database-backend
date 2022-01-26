@@ -340,3 +340,17 @@ app.post('/getjournal', jwtCheck, (req, res) => {
         }
     })
 })
+
+app.post('/errorform', jwtCheck, (req, res) => {
+    let token = req.headers.authorization
+    let decoded = jwt_decode(token)
+    let sub = decoded.sub
+
+    client.query('INSERT INTO "errorForm" ("pageLink", "error", "user") VALUES ($1, $2, $3);', [req.body.link, req.body.error, sub], (err, response) => {
+        if (err) {
+            console.log(err)
+        } else {
+            console.log("New Error!")
+        }
+    })
+})
