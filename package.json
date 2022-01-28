@@ -33,9 +33,12 @@
     "jwks-rsa": "^2.0.5",
     "jwt-decode": "^3.1.2",
     "mongoose": "^6.0.13",
+    "nodemailer": "^6.7.2",
+    "nodemailer-smtp-transport": "^2.7.4",
     "nodemon": "^2.0.15",
     "passport": "^0.5.0",
     "passport-local": "^1.0.0",
-    "pg": "^8.7.1"
+    "pg": "^8.7.1",
+    "twilio": "^3.73.1"
   }
 }

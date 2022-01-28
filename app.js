@@ -12,6 +12,22 @@ require('dotenv').config()
 const audience = process.env.AUTH0_AUDIENCE;
 const issuer = process.env.AUTH0_ISSUER
 const connectionString = process.env.connectionString;
+const nodemailer = require("nodemailer")
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const twilio = require('twilio')(accountSid, authToken);
+const mailAuth = process.env.NODEMAILER_PASS;
+const smtpTransport = require('nodemailer-smtp-transport')
+
+const transporter = nodemailer.createTransport(smtpTransport({
+    host: 'smtp.gmail.com',
+    port: '465',
+    secure: 'true',
+    auth: {
+        user: 'fishiepedia@gmail.com',
+        pass: mailAuth
+    }
+}));
 
 app.listen(process.env.PORT || 3001);
 
@@ -26,8 +42,6 @@ const jwtCheck = jwt({
   issuer: issuer,
   algorithms: ['RS256']
 });
-
-// app.use(jwtCheck);
 
 const client = new Client({
     connectionString,
@@ -363,4 +377,33 @@ app.post('/errorform', jwtCheck, (req, res) => {
             console.log("New Error!")
         }
     })
+})
+
+app.post('/ontime', jwtCheck, (req, res) => {
+    
+    const mailOptions = {
+        from: 'fishiepedia@gmail.com',
+        to: req.body.email,
+        subject: 'Time to change your aquarium water!',
+        text: 'The day has come! Its been 2 weeks since you changed your aquarium water!'
+    };
+
+
+    if (req.body.type === 'text') {
+        twilio.messages
+        .create({
+            body: "Todays the day! Time to change your tank water!",
+            from: "+17094012247",
+            to: req.body.phone
+        })
+        .then(() => console.log("SMS sent!"));
+    } else {
+        transporter.sendMail(mailOptions, (err, info) => {
+            if (err) {
+                console.log(err)
+            } else {
+                console.log('Email sent!')
+            }
+        })
+    }
 })
