@@ -82,23 +82,51 @@ app.get('/allfish', (req, res) => {
 
     const page = req.query.page
     const limit = req.query.limit
+
+
+
+    let search = undefined
+
+    if (req.query.search !== 'undefined') {
+        search = req.query.search
+    }
+
+
+
+    // if (req.query.search==)
     
+
     const startIndex = (page - 1) * limit
     const endIndex = page * limit
 
+    // const otherquery = 'SELECT' + query + 'FROM goldfish UNION SELECT' + query + 'FROM catfish UNION SELECT' + query + 'FROM gourami UNION SELECT' + query + 'FROM pufferfish UNION SELECT' + query + 'FROM cyprinids UNION SELECT' + query + 'FROM loaches UNION SELECT' + query + 'FROM characidae'
     const query = '"pic1", "pic2", "pic3", "fishID", "scientificName", "name", "origin", "careLevel", "temperament", "sizeCM", "sizeIN", "lifespan", "tankSizeL", "tankSizeG", "phLevelLow", "phLevelHigh", "dhLevelLow", "dhLevelHigh", "tempLowC", "tempHighC", "tempLowF", "tempHighF", "dietType", "wikipedia", "fishbase", "aquawiki"'
 
-    client.query('SELECT' + query + 'FROM goldfish UNION SELECT' + query + 'FROM catfish UNION SELECT' + query + 'FROM gourami UNION SELECT' + query + 'FROM pufferfish UNION SELECT' + query + 'FROM cyprinids UNION SELECT' + query + 'FROM loaches UNION SELECT' + query + 'FROM characidae', (err, response) => {
-        if (err) {
-            console.log(err)
-        } else {
-
-            const fish = response.rows
-            const someFish = fish.slice(startIndex, endIndex)
-
-            res.json(someFish)
-        }
-    })
+    if (search !== undefined) {
+        client.query('SELECT' + query + 'FROM goldfish WHERE LOWER(name) LIKE LOWER($1) UNION SELECT' + query + 'FROM catfish WHERE LOWER(name) LIKE LOWER($1) UNION SELECT' + query + 'FROM gourami WHERE LOWER(name) LIKE LOWER($1) UNION SELECT' + query + 'FROM pufferfish WHERE LOWER(name) LIKE LOWER($1) UNION SELECT' + query + 'FROM cyprinids WHERE LOWER(name) LIKE LOWER($1) UNION SELECT' + query + 'FROM loaches WHERE LOWER(name) LIKE LOWER($1) UNION SELECT' + query + 'FROM characidae WHERE LOWER(name) LIKE LOWER($1)', [`%${search}%`], (err, response) => {
+            if (err) {
+                console.log(err)
+            } else {
+    
+                const fish = response.rows
+                const someFish = fish.slice(startIndex, endIndex)
+    
+                res.json(someFish)
+            }
+        })
+    } else {
+        client.query('SELECT' + query + 'FROM goldfish UNION SELECT' + query + 'FROM catfish UNION SELECT' + query + 'FROM gourami UNION SELECT' + query + 'FROM pufferfish UNION SELECT' + query + 'FROM cyprinids UNION SELECT' + query + 'FROM loaches UNION SELECT' + query + 'FROM characidae', (err, response) => {
+            if (err) {
+                console.log(err)
+            } else {
+    
+                const fish = response.rows
+                const someFish = fish.slice(startIndex, endIndex)
+    
+                res.json(someFish)
+            }
+        })
+    }
 })
 
 app.post('/favorites', jwtCheck, (req, res) => {
@@ -316,13 +344,27 @@ app.post('/newentry', jwtCheck, (req, res) => {
 
     let date = Date.now()
 
-    client.query('INSERT INTO "tankJournal" ("user", "date", "ammonia", "nitrites", "nitrates", "phLevel", "alkalinity", "dhLevel", "tankName") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);', [sub, date, req.body.ammonia, req.body.nitrite, req.body.nitrate, req.body.phLevel, req.body.alkalinity, req.body.dhLevel, req.body.tankName], (err, res) => {
+    let celcius;
+    let fahrenheit;
+
+    if(req.body.tempScale === 'f') {
+        fahrenheit = req.body.temp
+        celcius = (fahrenheit - 32) * 5/9
+    } else {
+        celcius = req.body.temp
+        fahrenheit = (celcius * 9/5) + 32
+    }
+
+    client.query('INSERT INTO "tankJournal" ("user", "date", "ammonia", "nitrites", "nitrates", "phLevel", "khLevel", "ghLevel", "tankName", "celcius", "fahrenheit") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);', [sub, date, req.body.ammonia, req.body.nitrite, req.body.nitrate, req.body.phLevel, req.body.khLevel, req.body.ghLevel, req.body.tankName, celcius, fahrenheit], (err, res) => {
         if (err) {
             console.log('Error:', err);
         } else {
             console.log('New Entry!');
+            
         }
     })
+
+    res.end("Added!")
 
 })
 
@@ -350,8 +392,10 @@ app.post('/getjournal', jwtCheck, (req, res) => {
                             nitrites: row.nitrites,
                             nitrates: row.nitrates,
                             phLevel: row.phLevel,
-                            alkalinity: row.alkalinity,
-                            dhLevel: row.dhLevel
+                            khLevel: row.khLevel,
+                            ghLevel: row.ghLevel,
+                            celcius: row.celcius,
+                            fahrenheit: row.fahrenheit
                         }
                         journal.push(entry)
                     }
