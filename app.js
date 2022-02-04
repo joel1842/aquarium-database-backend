@@ -5,6 +5,8 @@ const app = express();
 const jwt = require('express-jwt');
 const jwt_decode = require('jwt-decode')
 const jwks = require('jwks-rsa');
+const https = require('https')
+const fs = require('fs')
 const { auth } = require('express-oauth2-jwt-bearer');
 const { Client } = require('pg');
 const e = require('express');
@@ -19,6 +21,13 @@ const twilio = require('twilio')(accountSid, authToken);
 const mailAuth = process.env.NODEMAILER_PASS;
 const smtpTransport = require('nodemailer-smtp-transport')
 
+const sslServer = https.createServer({
+    key: fs.readFileSync('key.pem'),
+    cert: fs.readFileSync('cert.pem')
+}, app)
+
+sslServer.listen(8000, () => {console.log("Secure server on port 8000 🚀")})
+
 const transporter = nodemailer.createTransport(smtpTransport({
     host: 'smtp.gmail.com',
     port: '465',
@@ -28,8 +37,6 @@ const transporter = nodemailer.createTransport(smtpTransport({
         pass: mailAuth
     }
 }));
-
-app.listen(process.env.PORT || 3001);
 
 const jwtCheck = jwt({
     secret: jwks.expressJwtSecret({
@@ -83,27 +90,20 @@ app.get('/allfish', (req, res) => {
     const page = req.query.page
     const limit = req.query.limit
 
-
-
     let search = undefined
 
     if (req.query.search !== 'undefined') {
         search = req.query.search
     }
 
-
-
-    // if (req.query.search==)
-    
-
     const startIndex = (page - 1) * limit
     const endIndex = page * limit
 
     // const otherquery = 'SELECT' + query + 'FROM goldfish UNION SELECT' + query + 'FROM catfish UNION SELECT' + query + 'FROM gourami UNION SELECT' + query + 'FROM pufferfish UNION SELECT' + query + 'FROM cyprinids UNION SELECT' + query + 'FROM loaches UNION SELECT' + query + 'FROM characidae'
-    const query = '"pic1", "pic2", "pic3", "fishID", "scientificName", "name", "origin", "careLevel", "temperament", "sizeCM", "sizeIN", "lifespan", "tankSizeL", "tankSizeG", "phLevelLow", "phLevelHigh", "dhLevelLow", "dhLevelHigh", "tempLowC", "tempHighC", "tempLowF", "tempHighF", "dietType", "wikipedia", "fishbase", "aquawiki"'
+    // const query = '"pic1", "pic2", "pic3", "fishID", "scientificName", "name", "origin", "careLevel", "temperament", "sizeCM", "sizeIN", "lifespan", "tankSizeL", "tankSizeG", "phLevelLow", "phLevelHigh", "dhLevelLow", "dhLevelHigh", "tempLowC", "tempHighC", "tempLowF", "tempHighF", "dietType", "wikipedia", "fishbase", "aquawiki"'
 
     if (search !== undefined) {
-        client.query('SELECT' + query + 'FROM goldfish WHERE LOWER(name) LIKE LOWER($1) UNION SELECT' + query + 'FROM catfish WHERE LOWER(name) LIKE LOWER($1) UNION SELECT' + query + 'FROM gourami WHERE LOWER(name) LIKE LOWER($1) UNION SELECT' + query + 'FROM pufferfish WHERE LOWER(name) LIKE LOWER($1) UNION SELECT' + query + 'FROM cyprinids WHERE LOWER(name) LIKE LOWER($1) UNION SELECT' + query + 'FROM loaches WHERE LOWER(name) LIKE LOWER($1) UNION SELECT' + query + 'FROM characidae WHERE LOWER(name) LIKE LOWER($1)', [`%${search}%`], (err, response) => {
+        client.query('SELECT * FROM "fishLibrary" WHERE LOWER(name) LIKE LOWER($1)', [`%${search}%`], (err, response) => {
             if (err) {
                 console.log(err)
             } else {
@@ -115,7 +115,7 @@ app.get('/allfish', (req, res) => {
             }
         })
     } else {
-        client.query('SELECT' + query + 'FROM goldfish UNION SELECT' + query + 'FROM catfish UNION SELECT' + query + 'FROM gourami UNION SELECT' + query + 'FROM pufferfish UNION SELECT' + query + 'FROM cyprinids UNION SELECT' + query + 'FROM loaches UNION SELECT' + query + 'FROM characidae', (err, response) => {
+        client.query('SELECT * FROM "fishLibrary"', (err, response) => {
             if (err) {
                 console.log(err)
             } else {
