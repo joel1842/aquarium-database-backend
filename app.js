@@ -87,8 +87,10 @@ app.get('/', (req, res) => {
 
 app.get('/allfish', (req, res) => {
 
-    const page = req.query.page
-    const limit = req.query.limit
+    const page = req.query.page - 1
+    const limit = 21
+
+    const offset = page * limit
 
     let search = undefined
 
@@ -96,36 +98,52 @@ app.get('/allfish', (req, res) => {
         search = req.query.search
     }
 
-    const startIndex = (page - 1) * limit
-    const endIndex = page * limit
-
-    // const otherquery = 'SELECT' + query + 'FROM goldfish UNION SELECT' + query + 'FROM catfish UNION SELECT' + query + 'FROM gourami UNION SELECT' + query + 'FROM pufferfish UNION SELECT' + query + 'FROM cyprinids UNION SELECT' + query + 'FROM loaches UNION SELECT' + query + 'FROM characidae'
-    // const query = '"pic1", "pic2", "pic3", "fishID", "scientificName", "name", "origin", "careLevel", "temperament", "sizeCM", "sizeIN", "lifespan", "tankSizeL", "tankSizeG", "phLevelLow", "phLevelHigh", "dhLevelLow", "dhLevelHigh", "tempLowC", "tempHighC", "tempLowF", "tempHighF", "dietType", "wikipedia", "fishbase", "aquawiki"'
-
     if (search !== undefined) {
-        client.query('SELECT * FROM "fishLibrary" WHERE LOWER(name) LIKE LOWER($1)', [`%${search}%`], (err, response) => {
+        client.query('SELECT * FROM "fishLibrary" WHERE LOWER(name) LIKE LOWER($1) LIMIT '+ limit + ' OFFSET ' + offset, [`%${search}%`], (err, response) => {
             if (err) {
                 console.log(err)
             } else {
     
                 const fish = response.rows
-                const someFish = fish.slice(startIndex, endIndex)
+                const fishCount = fish.length
     
-                res.json(someFish)
+                const data = {
+                    fish: fish,
+                    fishCount: fishCount
+                }
+
+                res.json(data)
             }
         })
     } else {
-        client.query('SELECT * FROM "fishLibrary"', (err, response) => {
+
+        client.query('SELECT * FROM "fishLibrary" LIMIT ' + limit + ' OFFSET ' + offset, (err, response) => {
             if (err) {
                 console.log(err)
             } else {
     
                 const fish = response.rows
-                const someFish = fish.slice(startIndex, endIndex)
-    
-                res.json(someFish)
+                const fishCount = fish.length
+
+                const data = {
+                    fish: fish,
+                    fishCount: fishCount
+                }
+
+                res.json(data)
             }
         })
+
+        // let totalCount;
+        // let pages;
+        // client.query('SELECT count(*) FROM "fishLibrary"', (err, response) => {
+        //     if (err) {
+        //         console.log(err)
+        //     } else {
+        //         totalCount = Number(response.rows[0].count)
+        //         pages = Math.ceil(totalCount / limit)
+        //     }
+        // })
     }
 })
 
@@ -320,6 +338,7 @@ app.delete('/deletetank/:id/', jwtCheck, (req, res) => {
             console.log('Error:', err);
         } else {
             console.log('Deleted Tank!');
+            res.end("Deleted Tank!")
         }
     })
 })
@@ -440,13 +459,17 @@ app.post('/ontime', jwtCheck, (req, res) => {
             from: "+17094012247",
             to: req.body.phone
         })
-        .then(() => console.log("SMS sent!"));
+        .then(() => {
+            console.log("SMS sent!")
+            res.end("New notification!")
+        });
     } else {
         transporter.sendMail(mailOptions, (err, info) => {
             if (err) {
                 console.log(err)
             } else {
                 console.log('Email sent!')
+                res.end("New notification!")
             }
         })
     }
