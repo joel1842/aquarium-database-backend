@@ -93,13 +93,15 @@ app.get('/allfish', (req, res) => {
     const offset = page * limit
 
     let search = undefined
+    let category;
 
     if (req.query.search !== 'undefined') {
         search = req.query.search
+        category = req.query.category
     }
 
     if (search !== undefined) {
-        client.query('SELECT * FROM "fishLibrary" WHERE LOWER(name) LIKE LOWER($1) LIMIT '+ limit + ' OFFSET ' + offset, [`%${search}%`], (err, response) => {
+        client.query('SELECT * FROM "fishLibrary" WHERE LOWER(' + category + ') LIKE LOWER($1) LIMIT ' + limit + ' OFFSET ' + offset, [`%${search}%`], (err, response) => {
             if (err) {
                 console.log(err)
             } else {
@@ -147,7 +149,7 @@ app.get('/allfish', (req, res) => {
     }
 })
 
-app.post('/favorites', jwtCheck, (req, res) => {
+app.post('/favorites', jwtCheck, (req, answer) => {
 
     let fishName = req.body.name;
     let token = req.headers.authorization
@@ -181,6 +183,7 @@ app.post('/favorites', jwtCheck, (req, res) => {
                     console.log(err);
                 } else {
                     console.log('New Favorite!')
+                    answer.end("Added!")
                 }
             })
         }
@@ -313,7 +316,7 @@ app.post('/myfish', jwtCheck, (req, res) => {
     })
 })
 
-app.post('/addfish', jwtCheck, (req, res) => {
+app.post('/addfish', jwtCheck, (req, response) => {
 
     let token = req.headers.authorization
     let decoded = jwt_decode(token)
@@ -324,7 +327,7 @@ app.post('/addfish', jwtCheck, (req, res) => {
             console.log(err);
         } else {
             console.log('Added fish to tank!')
-            console.log(res);
+            response.end("Added!")
         }
     })
 })
