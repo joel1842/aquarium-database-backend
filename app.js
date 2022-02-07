@@ -101,6 +101,7 @@ app.get('/allfish', (req, res) => {
     }
 
     if (search !== undefined) {
+        // couldn't get $1 to work in place of category, will have to find solution
         client.query('SELECT * FROM "fishLibrary" WHERE LOWER(' + category + ') LIKE LOWER($1) LIMIT ' + limit + ' OFFSET ' + offset, [`%${search}%`], (err, response) => {
             if (err) {
                 console.log(err)
@@ -232,9 +233,7 @@ app.delete('/removefav/:id/', jwtCheck, (req, res) => {
             console.log('Error:', err);
         } else {
             console.log('Deleted Favorite!')
-            res.send({
-                msg: "Deleted Favorite!"
-            })
+            res.end('Deleted Favorite!')
         }
     })
 })
@@ -355,6 +354,7 @@ app.delete('/deletetankfish/:id/', jwtCheck, (req, res) => {
             console.log('Error:', err);
         } else {
             console.log('Deleted Fish!');
+            res.end("Deleted!")
         }
     })
 })
