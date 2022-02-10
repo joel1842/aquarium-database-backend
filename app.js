@@ -1,15 +1,12 @@
 const { render } = require('ejs');
 const express = require('express');
-const cors = require('cors');
 const app = express();
 const jwt = require('express-jwt');
 const jwt_decode = require('jwt-decode')
 const jwks = require('jwks-rsa');
 const https = require('https')
 const fs = require('fs')
-const { auth } = require('express-oauth2-jwt-bearer');
 const { Client } = require('pg');
-const e = require('express');
 require('dotenv').config()
 const audience = process.env.AUTH0_AUDIENCE;
 const issuer = process.env.AUTH0_ISSUER
@@ -20,6 +17,22 @@ const authToken = process.env.TWILIO_AUTH_TOKEN;
 const twilio = require('twilio')(accountSid, authToken);
 const mailAuth = process.env.NODEMAILER_PASS;
 const smtpTransport = require('nodemailer-smtp-transport')
+const multer = require('multer');
+const bodyParser = require('body-parser')
+
+const urlencodedParser = bodyParser.urlencoded({extended: false})
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'img')
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '--' + file.originalname)
+    }
+})
+
+const upload = multer({storage: storage})
+
 
 const sslServer = https.createServer({
     key: fs.readFileSync('key.pem'),
@@ -66,7 +79,6 @@ app.use(express.static(__dirname + '/public'));
 app.use(express.json());
 app.use('/css', express.static(__dirname + '/css'));
 app.use('/img', express.static(__dirname + '/img'));
-
 app.use((req, res, next) => {
 
   res.set("Access-Control-Allow-Origin", "http://localhost:3000");
@@ -136,17 +148,6 @@ app.get('/allfish', (req, res) => {
                 res.json(data)
             }
         })
-
-        // let totalCount;
-        // let pages;
-        // client.query('SELECT count(*) FROM "fishLibrary"', (err, response) => {
-        //     if (err) {
-        //         console.log(err)
-        //     } else {
-        //         totalCount = Number(response.rows[0].count)
-        //         pages = Math.ceil(totalCount / limit)
-        //     }
-        // })
     }
 })
 
@@ -275,7 +276,8 @@ app.post('/mytanks', jwtCheck, (req, res) => {
                         tankName: row.tankName,
                         tankSize: row.tankSize,
                         tankType: row.tankType,
-                        unit: row.unit
+                        unit: row.unit,
+                        tankimg: row.tankimg
                     }
                     tanks.push(tank)
                 }
@@ -476,4 +478,22 @@ app.post('/ontime', jwtCheck, (req, res) => {
             }
         })
     }
+})
+
+app.post('/upload', jwtCheck, urlencodedParser, upload.single('image'), (req, res) => {
+    let file = req.file.filename
+    let id = req.body.tankid
+
+    console.log(file)
+    console.log(req.body.tankid)
+
+    client.query(`UPDATE tanks SET tankimg = '${file}' WHERE id =` + id, (err, response) => {
+        if (err) {
+            console.log(err)
+        } else {
+            console.log("Added file")
+            res.end()
+        }
+    })
+
 })
