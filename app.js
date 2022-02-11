@@ -110,11 +110,13 @@ app.get('/allfish', (req, res) => {
     if (req.query.search !== 'undefined') {
         search = req.query.search
         category = req.query.category
+
+        console.log(category)
     }
 
     if (search !== undefined) {
         // couldn't get $1 to work in place of category, will have to find solution
-        client.query('SELECT * FROM "fishLibrary" WHERE LOWER(' + category + ') LIKE LOWER($1) LIMIT ' + limit + ' OFFSET ' + offset, [`%${search}%`], (err, response) => {
+        client.query(`SELECT * FROM "fishLibrary" WHERE LOWER(`+ category +`) LIKE LOWER($1) LIMIT $2 OFFSET $3;`, [`%${search}%`, limit, offset], (err, response) => {
             if (err) {
                 console.log(err)
             } else {
@@ -132,7 +134,7 @@ app.get('/allfish', (req, res) => {
         })
     } else {
 
-        client.query('SELECT * FROM "fishLibrary" LIMIT ' + limit + ' OFFSET ' + offset, (err, response) => {
+        client.query(`SELECT * FROM "fishLibrary" LIMIT $1 OFFSET $2`, [limit, offset], (err, response) => {
             if (err) {
                 console.log(err)
             } else {
@@ -329,6 +331,17 @@ app.post('/addfish', jwtCheck, (req, response) => {
         } else {
             console.log('Added fish to tank!')
             response.end("Added!")
+        }
+    })
+})
+
+app.post('/editfish/:id/', jwtCheck, (req, res) => {
+    client.query(`UPDATE "tankFish" SET quantity = $1 WHERE id = $2`, [req.body.fishQuantity, req.params.id], (err, response) => {
+        if (err) {
+            console.log(err)
+        } else {
+            console.log("Quantity updated!")
+            res.end()
         }
     })
 })
