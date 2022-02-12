@@ -33,7 +33,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({storage: storage})
 
-
 const sslServer = https.createServer({
     key: fs.readFileSync('key.pem'),
     cert: fs.readFileSync('cert.pem')
@@ -80,14 +79,12 @@ app.use(express.json());
 app.use('/css', express.static(__dirname + '/css'));
 app.use('/img', express.static(__dirname + '/img'));
 app.use((req, res, next) => {
+    res.set("Access-Control-Allow-Origin", "http://localhost:3000");
+    res.set("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, X-Custom-Header, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Authorization");
+    res.set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
+    res.set("Access-Control-Allow-Credentials", "true")
 
-  res.set("Access-Control-Allow-Origin", "http://localhost:3000");
-  res.set("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, X-Custom-Header, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Authorization");
-  res.set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
-  res.set("Access-Control-Allow-Credentials", "true")
-
-  next();
-
+    next();
 })
 
 app.set('views', __dirname + '/views');
