@@ -152,7 +152,7 @@ app.get('/allfish', (req, res) => {
 
 app.post('/favorites', jwtCheck, (req, answer) => {
 
-    let fishName = req.body.name;
+    let fish = req.body.fish;
     let token = req.headers.authorization
     let decoded = jwt_decode(token)
     let sub = decoded.sub
@@ -170,7 +170,7 @@ app.post('/favorites', jwtCheck, (req, answer) => {
             arrayLength = data.rows.length
 
             data.rows.forEach((row) => {
-                if (row.subID === sub && row.fishName === fishName) {
+                if (row.subID === sub && row.fish === fish) {
                     console.log('duplicate!')
                 } else {
                     verified++
@@ -179,7 +179,7 @@ app.post('/favorites', jwtCheck, (req, answer) => {
         }
 
         if (verified === arrayLength) {
-            client.query('INSERT INTO "favoritesList" ("subID", "pic", "fishName", "link") VALUES ($1, $2, $3, $4);', [sub, req.body.pic, req.body.name, req.body.link], (err, res) => {
+            client.query('INSERT INTO "favoritesList" ("subID", "fish") VALUES ($1, $2);', [sub, fish], (err, res) => {
                 if (err) {
                     console.log(err);
                 } else {
@@ -199,20 +199,20 @@ app.get('/favlist', jwtCheck, (req, res) => {
 
     let favFish = []
 
-    client.query('SELECT * FROM "favoritesList"', (err, response) => {
+    client.query('SELECT "favoritesList"."id", "favoritesList"."subID", "fishLibrary"."name", "fishLibrary"."pic1" FROM "favoritesList" INNER JOIN "fishLibrary" ON "favoritesList"."fish"="fishLibrary"."id";', (err, response) => {
         if (err) {
             console.log(err)
         } else {
 
             const data = response;
+            console.log(data)
 
             data.rows.forEach((row) => {
                 if (row.subID === sub) {
                     const fishInfo = {
                         id: row.id,
-                        pic: row.pic,
-                        fishName: row.fishName,
-                        link: row.link
+                        pic: row.pic1,
+                        name: row.name
                     }
                     favFish.push(fishInfo)
                 }
@@ -291,20 +291,18 @@ app.post('/myfish', jwtCheck, (req, res) => {
     const tank = req.body.tank
     let fishies = []
 
-    client.query('SELECT * FROM "tankFish"', (err, response) => {
+    client.query(`SELECT "tankFish"."id", "tankFish"."user", "tanks"."tankName", "tankFish"."quantity", "fishLibrary"."name", "fishLibrary"."pic1" FROM "tankFish" INNER JOIN "fishLibrary" ON "tankFish"."fish"="fishLibrary"."id" INNER JOIN "tanks" ON "tankFish"."tank"="tanks"."id"`, (err, response) => {
         if (err) {
             console.log(err)
         } else {
 
             const data = response;
-
             data.rows.forEach((row) => {
                 if (row.tankName === tank) {
                     const fish = {
                         id: row.id,
-                        pic: row.fishPic,
-                        name: row.fishName,
-                        link: row.link,
+                        name: row.name,
+                        pic: row.pic1,
                         quantity: row.quantity
                     }
                     fishies.push(fish)
@@ -322,7 +320,7 @@ app.post('/addfish', jwtCheck, (req, response) => {
     let decoded = jwt_decode(token)
     let sub = decoded.sub
 
-    client.query('INSERT INTO "tankFish" ("user", "tankName", "fishPic", "fishName", "link", "quantity") VALUES ($1, $2, $3, $4, $5, $6);', [sub, req.body.tank, req.body.pic, req.body.name , req.body.link, req.body.quantity], (err, res) => {
+    client.query('INSERT INTO "tankFish" ("user", "tank", "fish", "quantity") VALUES ($1, $2, $3, $4);', [sub, req.body.tank, req.body.fish, req.body.quantity], (err, res) => {
         if (err) {
             console.log(err);
         } else {
@@ -359,6 +357,7 @@ app.delete('/deletetank/:id/', jwtCheck, (req, res) => {
 
 app.delete('/deletetankfish/:id/', jwtCheck, (req, res) => {
     const id = req.params.id;
+    console.log(id)
     const queryString = 'DELETE FROM "tankFish" WHERE id =';
 
     client.query(queryString + id, (err, response) => {
@@ -378,18 +377,7 @@ app.post('/newentry', jwtCheck, (req, res) => {
 
     let date = Date.now()
 
-    let celcius;
-    let fahrenheit;
-
-    if(req.body.tempScale === 'f') {
-        fahrenheit = req.body.temp
-        celcius = (fahrenheit - 32) * 5/9
-    } else {
-        celcius = req.body.temp
-        fahrenheit = (celcius * 9/5) + 32
-    }
-
-    client.query('INSERT INTO "tankJournal" ("user", "date", "ammonia", "nitrites", "nitrates", "phLevel", "khLevel", "ghLevel", "tankName", "celcius", "fahrenheit") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);', [sub, date, req.body.ammonia, req.body.nitrite, req.body.nitrate, req.body.phLevel, req.body.khLevel, req.body.ghLevel, req.body.tankName, celcius, fahrenheit], (err, res) => {
+    client.query('INSERT INTO "tankJournal" ("user", "date", "ammonia", "nitrites", "nitrates", "phLevel", "khLevel", "ghLevel", "tank", "temp", "tempscale") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);', [sub, date, req.body.ammonia, req.body.nitrite, req.body.nitrate, req.body.phLevel, req.body.khLevel, req.body.ghLevel, req.body.tank, req.body.temp, req.body.tempscale], (err, res) => {
         if (err) {
             console.log('Error:', err);
         } else {
@@ -410,11 +398,12 @@ app.post('/getjournal', jwtCheck, (req, res) => {
 
     let journal = []
 
-    client.query('SELECT * FROM "tankJournal"', (err, response) => {
+    client.query('SELECT "tankJournal"."id", "tankJournal"."user", "tankJournal"."date", "tankJournal"."ammonia", "tankJournal"."nitrites", "tankJournal"."nitrates", "tankJournal"."phLevel", "tankJournal"."khLevel", "tankJournal"."ghLevel", "tankJournal"."temp", "tankJournal"."tempscale", "tanks"."tankName" FROM "tankJournal" INNER JOIN "tanks" ON "tankJournal"."tank"="tanks"."id";', (err, response) => {
         if (err) {
             console.log(err)
         } else {
             const data = response;
+            console.log(data)
 
             data.rows.forEach((row) => {
                 if (row.user === sub) {
@@ -428,8 +417,8 @@ app.post('/getjournal', jwtCheck, (req, res) => {
                             phLevel: row.phLevel,
                             khLevel: row.khLevel,
                             ghLevel: row.ghLevel,
-                            celcius: row.celcius,
-                            fahrenheit: row.fahrenheit
+                            temp: row.temp,
+                            tempscale: row.tempscale
                         }
                         journal.push(entry)
                     }
