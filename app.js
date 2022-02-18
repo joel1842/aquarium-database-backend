@@ -17,22 +17,6 @@ const authToken = process.env.TWILIO_AUTH_TOKEN;
 const twilio = require('twilio')(accountSid, authToken);
 const mailAuth = process.env.NODEMAILER_PASS;
 const smtpTransport = require('nodemailer-smtp-transport')
-const multer = require('multer');
-const bodyParser = require('body-parser');
-// const { TokenFileWebIdentityCredentials } = require('aws-sdk');
-
-const urlencodedParser = bodyParser.urlencoded({extended: false})
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'img')
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + '--' + file.originalname)
-    }
-})
-
-const upload = multer({storage: storage})
 
 const sslServer = https.createServer({
     key: fs.readFileSync('key.pem'),
@@ -488,14 +472,11 @@ app.post('/ontime', jwtCheck, (req, res) => {
     }
 })
 
-app.post('/upload', jwtCheck, urlencodedParser, upload.single('image'), (req, res) => {
-    let file = req.file.filename
-    let id = req.body.tankid
+app.post('/upload', jwtCheck, (req, res) => {
+    let url = req.body.url
+    let id = req.body.id
 
-    console.log(file)
-    console.log(req.body.tankid)
-
-    client.query(`UPDATE tanks SET tankimg = '${file}' WHERE id =` + id, (err, response) => {
+    client.query(`UPDATE tanks SET tankimg = '${url}' WHERE id =` + id, (err, response) => {
         if (err) {
             console.log(err)
         } else {
