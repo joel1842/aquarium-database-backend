@@ -18,7 +18,8 @@ const twilio = require('twilio')(accountSid, authToken);
 const mailAuth = process.env.NODEMAILER_PASS;
 const smtpTransport = require('nodemailer-smtp-transport')
 const multer = require('multer');
-const bodyParser = require('body-parser')
+const bodyParser = require('body-parser');
+// const { TokenFileWebIdentityCredentials } = require('aws-sdk');
 
 const urlencodedParser = bodyParser.urlencoded({extended: false})
 
@@ -291,19 +292,25 @@ app.post('/myfish', jwtCheck, (req, res) => {
     const tank = req.body.tank
     let fishies = []
 
-    client.query(`SELECT "tankFish"."id", "tankFish"."user", "tanks"."tankName", "tankFish"."quantity", "fishLibrary"."name", "fishLibrary"."pic1" FROM "tankFish" INNER JOIN "fishLibrary" ON "tankFish"."fish"="fishLibrary"."id" INNER JOIN "tanks" ON "tankFish"."tank"="tanks"."id"`, (err, response) => {
+    client.query(`SELECT "tankFish"."id", "tankFish"."user", "tanks"."tankName", "tankFish"."quantity", "fishLibrary"."name", "fishLibrary"."pic1", "fishLibrary"."sizecm", "fishLibrary"."phlevellow", "fishLibrary"."phlevelhigh", "fishLibrary"."templowc", "fishLibrary"."temphighc" FROM "tankFish" INNER JOIN "fishLibrary" ON "tankFish"."fish"="fishLibrary"."id" INNER JOIN "tanks" ON "tankFish"."tank"="tanks"."id"`, (err, response) => {
         if (err) {
             console.log(err)
         } else {
 
             const data = response;
+            console.log(data)
             data.rows.forEach((row) => {
                 if (row.tankName === tank) {
                     const fish = {
                         id: row.id,
                         name: row.name,
                         pic: row.pic1,
-                        quantity: row.quantity
+                        quantity: row.quantity,
+                        size: row.sizecm,
+                        phlow: row.phlevellow,
+                        phhigh: row.phlevelhigh,
+                        templow: row.templowc,
+                        temphigh: row.temphighc
                     }
                     fishies.push(fish)
                 }
@@ -436,12 +443,14 @@ app.post('/errorform', jwtCheck, (req, res) => {
     let token = req.headers.authorization
     let decoded = jwt_decode(token)
     let sub = decoded.sub
+    console.log('ERROR')
 
     client.query('INSERT INTO "errorForm" ("pageLink", "error", "user") VALUES ($1, $2, $3);', [req.body.link, req.body.error, sub], (err, response) => {
         if (err) {
             console.log(err)
         } else {
             console.log("New Error!")
+            res.end()
         }
     })
 })

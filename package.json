@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/joel1842/aquarium-database#readme",
   "dependencies": {
+    "aws-sdk": "^2.1074.0",
     "bcrypt": "^5.0.1",
     "concurrently": "^6.4.0",
     "cors": "^2.8.5",
