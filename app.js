@@ -17,13 +17,18 @@ const authToken = process.env.TWILIO_AUTH_TOKEN;
 const twilio = require('twilio')(accountSid, authToken);
 const mailAuth = process.env.NODEMAILER_PASS;
 const smtpTransport = require('nodemailer-smtp-transport')
+const port = process.env.PORT
 
-const sslServer = https.createServer({
-    key: fs.readFileSync('key.pem'),
-    cert: fs.readFileSync('cert.pem')
-}, app)
+// const sslServer = https.createServer({
+//     key: fs.readFileSync('key.pem'),
+//     cert: fs.readFileSync('cert.pem')
+// }, app)
 
-sslServer.listen(process.env.PORT, () => {console.log("Secure server on port 8000 🚀")})
+// sslServer.listen(process.env.PORT, () => {console.log("Secure server on port 8000 🚀")})
+
+app.listen(port, () => {
+    console.log(`Secure server on port ${port}`)
+})
 
 const transporter = nodemailer.createTransport(smtpTransport({
     host: 'smtp.gmail.com',
