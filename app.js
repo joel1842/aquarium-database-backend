@@ -23,7 +23,7 @@ const sslServer = https.createServer({
     cert: fs.readFileSync('cert.pem')
 }, app)
 
-sslServer.listen(8000, () => {console.log("Secure server on port 8000 🚀")})
+sslServer.listen(process.env.PORT, () => {console.log("Secure server on port 8000 🚀")})
 
 const transporter = nodemailer.createTransport(smtpTransport({
     host: 'smtp.gmail.com',
