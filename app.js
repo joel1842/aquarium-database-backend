@@ -234,12 +234,13 @@ app.post('/createtank', jwtCheck, (req, res) => {
     let decoded = jwt_decode(token)
     let sub = decoded.sub
 
-    client.query('INSERT INTO "tanks" ("user", "tankName", "tankSize", "unit", "tankType") VALUES ($1, $2, $3, $4, $5);', [sub, req.body.tankName, req.body.tankSize, req.body.unit, req.body.tankType], (err, res) => {
+    client.query('INSERT INTO "tanks" ("user", "tankName", "tankSize", "unit", "tankType") VALUES ($1, $2, $3, $4, $5);', [sub, req.body.tankName, req.body.tankSize, req.body.unit, req.body.tankType], (err, response) => {
         if (err) {
             console.log(err);
         } else {
             console.log('Tank Created!')
             console.log(res);
+            res.end()
         }
     })
 })
