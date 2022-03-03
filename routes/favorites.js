@@ -56,7 +56,7 @@ router
 
     let favFish = []
 
-    client.query('SELECT "favoritesList"."id", "favoritesList"."subID", "fishLibrary"."name", "fishLibrary"."pic1" FROM "favoritesList" INNER JOIN "fishLibrary" ON "favoritesList"."fish"="fishLibrary"."id";', (err, response) => {
+    database.query('SELECT "favoritesList"."id", "favoritesList"."subID", "fishLibrary"."name", "fishLibrary"."pic1" FROM "favoritesList" INNER JOIN "fishLibrary" ON "favoritesList"."fish"="fishLibrary"."id";', (err, response) => {
         if (err) {
             console.log(err)
         } else {
@@ -86,7 +86,7 @@ router
     const id = req.params.id;
     const queryString = 'DELETE FROM "favoritesList" WHERE id =';
 
-    client.query(queryString + id, (err, response) => {
+    database.query(queryString + id, (err, response) => {
         if (err) {
             console.log('Error:', err);
         } else {
